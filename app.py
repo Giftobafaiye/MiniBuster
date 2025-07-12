@@ -5,6 +5,14 @@ from sklearn.ensemble import IsolationForest  # ✅ this is key
 import smtplib
 from email.mime.text import MIMEText
 
+import requests  # If not already imported
+
+def send_slack_alert(webhook_url, anomalies_count):
+    message = {
+        "text": f"🚨 *MiniBuster* detected *{anomalies_count}* anomalies in logs!"
+    }
+    requests.post(webhook_url, json=message)
+
 def send_email_alert(to_email, anomalies_count):
     sender = "giftobafaiye@gmail.com"
     password = "oaed cuor gqgi mqlw"  # <-- App password from Google
@@ -26,10 +34,16 @@ def send_slack_alert(webhook_url, anomalies_count):
     message = {
         "text": f"🚨 *MiniBuster* detected *{anomalies_count}* anomalies in logs!"
     }
-    requests.post(https://hooks.slack.com/services/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, json=message)
+    requests.post("https://hooks.slack.com/services/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", json=message)
+
+
+anomalies = df[df['anomaly'] == -1]
+st.subheader("🚨 Detected Anomalies")
+st.dataframe(anomalies)
 
 if not anomalies.empty:
-    send_slack_alert("https://hooks.slack.com/services/your/webhook/url", len(anomalies))
+    send_email_alert("giftobafaiye@gmail.com", len(anomalies))
+    send_slack_alert("https://hooks.slack.com/services/your/full/webhook", len(anomalies))
 
 st.set_page_config(page_title="MiniBuster Dashboard", layout="centered")
 
