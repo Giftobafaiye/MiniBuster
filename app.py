@@ -1,21 +1,17 @@
 import streamlit as st
 import streamlit_authenticator as stauth
 import pandas as pd
-from sklearn.ensemble import IsolationForest  # ✅ this is key
+from sklearn.ensemble import IsolationForest
 import smtplib
+import requests
 from email.mime.text import MIMEText
 
-import requests  # If not already imported
-
-def send_slack_alert(webhook_url, anomalies_count):
-    message = {
-        "text": f"🚨 *MiniBuster* detected *{anomalies_count}* anomalies in logs!"
-    }
-    requests.post(webhook_url, json=message)
-
+# -----------------------------
+# Email Alert Function
+# -----------------------------
 def send_email_alert(to_email, anomalies_count):
-    sender = "giftobafaiye@gmail.com"
-    password = "oaed cuor gqgi mqlw"  # <-- App password from Google
+    sender = st.secrets["email"]["sender"]
+    password = st.secrets["email"]["app_password"]
     subject = "🚨 MiniBuster Alert: Anomalies Detected"
     body = f"MiniBuster detected {anomalies_count} suspicious log entries."
 
@@ -28,30 +24,29 @@ def send_email_alert(to_email, anomalies_count):
         server.login(sender, password)
         server.sendmail(sender, to_email, msg.as_string())
 
-import requests
-
-def send_slack_alert(webhook_url, anomalies_count):
+# -----------------------------
+# Slack Alert Function
+# -----------------------------
+def send_slack_alert(anomalies_count):
+    webhook = st.secrets["slack"]["webhook"]
     message = {
         "text": f"🚨 *MiniBuster* detected *{anomalies_count}* anomalies in logs!"
     }
-    requests.post("https://hooks.slack.com/services/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", json=message)
+    requests.post(webhook, json=message)
 
-
-anomalies = df[df['anomaly'] == -1]
-st.subheader("🚨 Detected Anomalies")
-st.dataframe(anomalies)
-
-if not anomalies.empty:
-    send_email_alert("giftobafaiye@gmail.com", len(anomalies))
-    send_slack_alert("https://hooks.slack.com/services/your/full/webhook", len(anomalies))
-
+# -----------------------------
+# Streamlit Page Config
+# -----------------------------
 st.set_page_config(page_title="MiniBuster Dashboard", layout="centered")
 
+# -----------------------------
+# Authenticator Config
+# -----------------------------
 credentials = {
     "usernames": {
         "admin": {
             "name": "Admin",
-            "password": "$2b$12$CnLg6Ld9OdQ815a5IDAodu37gJocaMl8r6q.79VsJFtYF8hKsP4fG"  # your hashed password
+            "password": "$2b$12$CnLg6Ld9OdQ815a5IDAodu37gJocaMl8r6q.79VsJFtYF8hKsP4fG"
         }
     }
 }
@@ -65,11 +60,12 @@ authenticator = stauth.Authenticate(
 
 name, authentication_status, username = authenticator.login(form_name='Login', location='main')
 
+# -----------------------------
+# If Logged In
+# -----------------------------
 if authentication_status:
     authenticator.logout('Logout', 'sidebar')
     st.success(f'Welcome {name} 👋')
-
-    # 👇 Everything below must be indented inside this block
     st.title("🛡️ MiniBuster: Ransomware Anomaly Detector")
 
     uploaded_file = st.file_uploader("📁 Upload system_logs.csv", type=["csv"])
@@ -79,7 +75,7 @@ if authentication_status:
         st.subheader("📊 Preview of Uploaded Logs")
         st.dataframe(df)
 
-        # Run Isolation Forest
+        # Anomaly Detection
         contamination = st.slider("Sensitivity (Contamination %)", 0.01, 0.5, 0.2)
         model = IsolationForest(contamination=contamination)
         model.fit(df)
@@ -89,26 +85,34 @@ if authentication_status:
         st.subheader("🚨 Detected Anomalies")
         st.dataframe(anomalies)
 
-        # Charts
+        # Alerts
+        if not anomalies.empty:
+            send_email_alert("your-email@gmail.com", len(anomalies))
+            send_slack_alert(len(anomalies))
+
+        # Visualizations
+        st.subheader("📈 CPU Usage Over Time")
         st.line_chart(df['cpu_usage'])
+
+        st.subheader("📈 Memory Usage Over Time")
         st.line_chart(df['memory_usage'])
+
+        st.subheader("📈 Disk Usage Over Time")
         st.line_chart(df['disk_usage'])
+
+        st.subheader("📈 Network Inbound Over Time")
         st.line_chart(df['network_in'])
 
         # Download
-        st.download_button("⬇️ Download Report", df.to_csv(index=False), file_name="report.csv")
-    else:
-        st.info("Please upload a CSV file to get started.")
+        st.download_button("⬇️ Download Full Report", df.to_csv(index=False), file_name="minibuster_report.csv")
 
-elif authentication_status is False:
+    else:
+        st.info("Please upload a CSV file to begin.")
+
+# -----------------------------
+# If Login Failed
+# -----------------------------
+elif authentication_status == False:
     st.error("Incorrect username or password")
 elif authentication_status is None:
     st.warning("Please enter your credentials")
-
-
-
-
-
-
-
-
