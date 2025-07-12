@@ -5,6 +5,32 @@ from sklearn.ensemble import IsolationForest  # ✅ this is key
 import smtplib
 from email.mime.text import MIMEText
 
+def send_email_alert(to_email, anomalies_count):
+    sender = "giftobafaiye@gmail.com"
+    password = "oaed cuor gqgi mqlw"  # <-- App password from Google
+    subject = "🚨 MiniBuster Alert: Anomalies Detected"
+    body = f"MiniBuster detected {anomalies_count} suspicious log entries."
+
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = sender
+    msg['To'] = to_email
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender, password)
+        server.sendmail(sender, to_email, msg.as_string())
+
+import requests
+
+def send_slack_alert(webhook_url, anomalies_count):
+    message = {
+        "text": f"🚨 *MiniBuster* detected *{anomalies_count}* anomalies in logs!"
+    }
+    requests.post(https://hooks.slack.com/services/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, json=message)
+
+if not anomalies.empty:
+    send_slack_alert("https://hooks.slack.com/services/your/webhook/url", len(anomalies))
+
 st.set_page_config(page_title="MiniBuster Dashboard", layout="centered")
 
 credentials = {
